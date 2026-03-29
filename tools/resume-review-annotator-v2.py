@@ -366,6 +366,10 @@ class Rect:
 def load_font(size: int, family: str = "sans") -> ImageFont.ImageFont | ImageFont.FreeTypeFont:
     if family == "serif":
         candidates = [
+            "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSerifCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
             "/System/Library/Fonts/Supplemental/Songti.ttc",
             "/System/Library/Fonts/Songti.ttc",
             "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
@@ -374,6 +378,10 @@ def load_font(size: int, family: str = "sans") -> ImageFont.ImageFont | ImageFon
         ]
     else:
         candidates = [
+            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
+            "/usr/share/fonts/truetype/noto/NotoSerifCJK-Regular.ttc",
             "/System/Library/Fonts/PingFang.ttc",
             "/System/Library/Fonts/Supplemental/PingFang.ttc",
             "/System/Library/Fonts/Supplemental/Avenir Next.ttc",

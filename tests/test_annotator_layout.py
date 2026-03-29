@@ -2,6 +2,7 @@ import importlib.util
 import sys
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from PIL import Image, ImageDraw
 
@@ -65,6 +66,19 @@ class AnnotatorLayoutTests(unittest.TestCase):
 
         self.assertGreater(len(lines), 1)
         self.assertGreater(height, 30)
+
+    def test_load_font_supports_linux_noto_cjk_path(self):
+        linux_font = "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"
+
+        with (
+            mock.patch.object(self.annotator.os.path, "exists", side_effect=lambda path: path == linux_font),
+            mock.patch.object(self.annotator.ImageFont, "truetype", return_value="linux-font") as truetype,
+            mock.patch.object(self.annotator.ImageFont, "load_default", return_value="default-font"),
+        ):
+            font = self.annotator.load_font(24, family="sans")
+
+        self.assertEqual(font, "linux-font")
+        truetype.assert_called_once_with(linux_font, size=24)
 
 
 if __name__ == "__main__":
