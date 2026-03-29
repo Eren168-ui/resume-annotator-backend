@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from datetime import datetime, timezone
@@ -21,25 +22,50 @@ JWT_EXPIRE_SECONDS = int(os.getenv("JWT_EXPIRE_SECONDS", str(60 * 60 * 24)))  # 
 
 
 def _is_dev_auth_bypass_enabled() -> bool:
-    return True
+    return os.getenv("DEV_AUTH_BYPASS", "").strip().lower() == "true"
+
+
+def _load_users_from_env() -> dict[str, dict[str, str]]:
+    raw = os.getenv("AUTH_USERS_JSON", "").strip()
+    if not raw:
+        return {}
+
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("AUTH_USERS_JSON 不是合法 JSON") from exc
+
+    users: dict[str, dict[str, str]] = {}
+    for index, item in enumerate(parsed, start=1):
+        if not isinstance(item, dict):
+            raise RuntimeError("AUTH_USERS_JSON 中的每个账号都必须是对象")
+
+        email = str(item.get("email", "")).strip()
+        password = str(item.get("password", "")).strip()
+        if not email or not password:
+            raise RuntimeError("AUTH_USERS_JSON 中的账号必须包含 email 和 password")
+
+        users[email] = {
+            "id": str(item.get("id") or f"u{index}"),
+            "name": str(item.get("name") or f"用户 {index}"),
+            "password": password,
+        }
+    return users
 
 def _get_users() -> dict[str, dict[str, str]]:
-    users = {
-        os.getenv("ADMIN_EMAIL", "admin@example.com"): {
+    users = _load_users_from_env()
+    if users:
+        return users
+
+    admin_email = os.getenv("ADMIN_EMAIL", "admin@example.com").strip()
+    admin_password = os.getenv("ADMIN_PASSWORD", "changeme").strip()
+    return {
+        admin_email: {
             "id": "u1",
             "name": "管理员",
-            "password": os.getenv("ADMIN_PASSWORD", "changeme"),
+            "password": admin_password,
         }
     }
-    users.setdefault(
-        "admin@erenlab.cn",
-        {
-            "id": "u1",
-            "name": "管理员",
-            "password": "1120240241.",
-        },
-    )
-    return users
 
 
 def _make_token(user_id: str, email: str) -> str:
