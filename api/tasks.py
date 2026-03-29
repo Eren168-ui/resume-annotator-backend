@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import os
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
@@ -18,8 +19,17 @@ from services.processor import process_task
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# Light thread pool: max 3 concurrent annotation jobs
-_pool = ThreadPoolExecutor(max_workers=3)
+
+def _task_max_workers() -> int:
+    try:
+        value = int(os.getenv("TASK_MAX_WORKERS", "3"))
+    except ValueError:
+        return 3
+    return value if value >= 1 else 3
+
+
+# Thread pool for concurrent annotation jobs
+_pool = ThreadPoolExecutor(max_workers=_task_max_workers())
 
 ALLOWED_RESUME_TYPES = {"application/pdf", "application/octet-stream"}
 ALLOWED_JD_TYPES = {"image/png", "image/jpeg", "image/jpg", "image/webp"}
