@@ -1,0 +1,7 @@
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+PyJWT==2.9.0
+pydantic==2.10.3
+markdown2==2.5.1
+Pillow==11.0.0

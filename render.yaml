@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: resume-annotator-api
+    runtime: docker
+    plan: starter
+    region: singapore
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    domains:
+      - api.erenlab.cn
+    disk:
+      name: resume-annotator-data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: DATA_DIR
+        value: /data
+      - key: FRONTEND_ORIGIN
+        value: https://erenlab.cn
+      - key: FRONTEND_ORIGINS
+        value: https://www.erenlab.cn
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: AI_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BASE_URL
+        sync: false
+      - key: OPENAI_MODEL
+        value: gpt-4o-mini

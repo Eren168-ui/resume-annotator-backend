@@ -1,0 +1,244 @@
+[
+  {
+    "candidate_name": "吴泓磊",
+    "jd_title": "活动策划执行专员",
+    "jd_keywords": [
+      "活动策划",
+      "活动执行",
+      "农贸市场",
+      "生鲜门店",
+      "项目管理",
+      "沟通能力",
+      "团队协作",
+      "创意策划",
+      "活动监控",
+      "效果评估",
+      "独立负责",
+      "创新吸引力",
+      "变化环境适应"
+    ],
+    "jd_hard_skills": [
+      "活动策划与执行",
+      "项目管理",
+      "活动效果评估",
+      "公文审核与数据比对",
+      "后勤服务组织"
+    ],
+    "jd_soft_skills": [
+      "沟通能力",
+      "团队协作",
+      "创新思维",
+      "抗压能力",
+      "责任心"
+    ],
+    "jd_responsibilities": [
+      "主导农贸市场活动的创意和策划实施落地",
+      "组织和执行活动，确保所有环节得到有效管理",
+      "与团队协作，确保活动内容的创新和吸引力",
+      "对活动效果进行监控和评估，持续优化活动流程"
+    ],
+    "match_assessment": {
+      "keyword_coverage": "medium",
+      "professionalism": "medium",
+      "clarity": "medium",
+      "fit": "low"
+    },
+    "strengths": [
+      "具备较强的组织协调能力和团队合作经验",
+      "有大型活动（如亚运会）志愿服务经历，熟悉活动流程",
+      "校园任职经历丰富，曾负责文化、体育类活动的开展",
+      "文字功底良好，能处理文书工作"
+    ],
+    "weaknesses": [
+      "缺乏农贸市场或生鲜门店相关活动策划经验",
+      "实习经历偏行政与劳动纠纷调解，与岗位核心职责匹配度低",
+      "未突出项目管理或独立策划执行的能力",
+      "简历中缺少量化成果和具体活动案例"
+    ],
+    "summary": "候选人具备一定组织协调和活动支持经验，但缺乏岗位要求的农贸市场/生鲜门店活动策划与执行经验。整体匹配度偏低，需强化相关经历描述并突出项目管理能力。",
+    "issues": [
+      {
+        "id": "issue-1",
+        "page": 1,
+        "title": "求职意向不符",
+        "severity": "high",
+        "category": "content",
+        "star_gap": "S",
+        "focus_text": "求职意向：街道卫生站工作者",
+        "anchor": {
+          "x": 100,
+          "y": 250,
+          "w": 300,
+          "h": 40
+        },
+        "comment": "求职意向写的是街道卫生站，与目标岗位不匹配，容易被筛除。",
+        "rewrite_tip": "改为‘活动策划执行专员’或‘市场活动运营’更贴合岗位。",
+        "ocr_enabled": true,
+        "ocr_max_lines": 1,
+        "padding": 8
+      },
+      {
+        "id": "issue-2",
+        "page": 1,
+        "title": "实习经历无关",
+        "severity": "high",
+        "category": "content",
+        "star_gap": "S",
+        "focus_text": "实习劳动纠纷岗，负责调节劳动纠纷，维护劳动者合法利益",
+        "anchor": {
+          "x": 100,
+          "y": 360,
+          "w": 300,
+          "h": 60
+        },
+        "comment": "劳动纠纷调解与活动策划无关联，无法体现岗位所需技能。",
+        "rewrite_tip": "可弱化或删除，重点突出校园活动组织经验。",
+        "ocr_enabled": true,
+        "ocr_max_lines": 2,
+        "padding": 8
+      },
+      {
+        "id": "issue-3",
+        "page": 1,
+        "title": "缺乏核心关键词",
+        "severity": "medium",
+        "category": "content",
+        "star_gap": "STAR",
+        "focus_text": "负责各类职业健康技能竞赛、培训班的赛前名单统计，签到报告和后勤服务",
+        "anchor": {
+          "x": 100,
+          "y": 480,
+          "w": 300,
+          "h": 60
+        },
+        "comment": "虽有活动参与，但未体现‘策划’‘创意’‘执行落地’等关键词。",
+        "rewrite_tip": "改写为‘协助策划并执行职业健康技能竞赛，负责全流程组织与后勤保障’。",
+        "ocr_enabled": true,
+        "ocr_max_lines": 2,
+        "padding": 8
+      },
+      {
+        "id": "issue-4",
+        "page": 1,
+        "title": "校园经历未量化",
+        "severity": "medium",
+        "category": "content",
+        "star_gap": "R",
+        "focus_text": "担任校学工部生活部部长，负责相关活动的后勤工作",
+        "anchor": {
+          "x": 100,
+          "y": 580,
+          "w": 300,
+          "h": 40
+        },
+        "comment": "仅说明职责，未体现成果或影响，缺乏说服力。",
+        "rewrite_tip": "补充如‘组织XX场活动，参与人数超XXX’等数据。",
+        "ocr_enabled": true,
+        "ocr_max_lines": 1,
+        "padding": 8
+      },
+      {
+        "id": "issue-5",
+        "page": 1,
+        "title": "个人评价空泛",
+        "severity": "low",
+        "category": "content",
+        "star_gap": "A",
+        "focus_text": "本人具备一定的亲和力，为人幽默风趣，自信大方，吃苦耐劳",
+        "anchor": {
+          "x": 100,
+          "y": 720,
+          "w": 300,
+          "h": 60
+        },
+        "comment": "描述太笼统，无法体现专业能力。",
+        "rewrite_tip": "改为‘擅长跨部门沟通协调，具备较强执行力和应变能力’。",
+        "ocr_enabled": true,
+        "ocr_max_lines": 2,
+        "padding": 8
+      },
+      {
+        "id": "issue-6",
+        "page": 1,
+        "title": "未突出项目管理",
+        "severity": "medium",
+        "category": "content",
+        "star_gap": "S",
+        "focus_text": "负责各类职业健康技能竞赛、培训班的赛前名单统计，签到报告和后勤服务",
+        "anchor": {
+          "x": 100,
+          "y": 480,
+          "w": 300,
+          "h": 60
+        },
+        "comment": "未体现‘独立负责’或‘全流程管理’，不符合JD核心要求。",
+        "rewrite_tip": "强调‘全程跟进赛事筹备与执行，协调多方资源’等表述。",
+        "ocr_enabled": true,
+        "ocr_max_lines": 2,
+        "padding": 8
+      },
+      {
+        "id": "issue-7",
+        "page": 1,
+        "title": "缺少活动创意描述",
+        "severity": "medium",
+        "category": "content",
+        "star_gap": "T",
+        "focus_text": "担任学院学生会副主席，分管体育部，负责校各类体育锦标赛",
+        "anchor": {
+          "x": 100,
+          "y": 620,
+          "w": 300,
+          "h": 40
+        },
+        "comment": "只提负责，未展示是否有创意策划或优化流程。",
+        "rewrite_tip": "加入‘设计趣味赛制提升参与度’或‘活动参与率提升XX%’等细节。",
+        "ocr_enabled": true,
+        "ocr_max_lines": 1,
+        "padding": 8
+      },
+      {
+        "id": "issue-8",
+        "page": 1,
+        "title": "教育背景冗长",
+        "severity": "low",
+        "category": "format",
+        "star_gap": "S",
+        "focus_text": "主修课程：管理学原理、公共管理学、卫生伦理学和卫生法学、公共经济学、卫生政策学、人力资源管理、社会医学、公共卫生、卫生经济学等。",
+        "anchor": {
+          "x": 100,
+          "y": 200,
+          "w": 300,
+          "h": 80
+        },
+        "comment": "课程罗列过多，占用空间且与岗位关联性弱。",
+        "rewrite_tip": "保留与管理、组织相关的课程，精简至3-5门。",
+        "ocr_enabled": true,
+        "ocr_max_lines": 3,
+        "padding": 8
+      }
+    ],
+    "consultation_guide": {
+      "recommended": false,
+      "headline": "简历方向偏差大，建议重点调整",
+      "summary": "候选人基础素质不错，但当前简历未体现活动策划执行的核心能力，匹配度较低。",
+      "reasons": [
+        "求职意向与目标岗位不一致",
+        "实习经历与岗位需求脱节",
+        "缺乏关键技能词和项目管理经验描述",
+        "未突出活动策划的创意与执行能力"
+      ],
+      "session_focus": [
+        "如何将校园活动经历转化为策划执行能力描述",
+        "如何提炼并展示项目管理经验",
+        "如何优化简历结构以突出匹配点"
+      ],
+      "prep_items": [
+        "整理所有参与过的活动项目清单",
+        "提取每项活动中的策划、执行、协调、评估环节",
+        "准备1-2个具体案例用于面试"
+      ],
+      "cta": "建议重新撰写简历，聚焦‘活动策划执行’主线，突出项目管理和创意能力"
+    }
+  }
+]
