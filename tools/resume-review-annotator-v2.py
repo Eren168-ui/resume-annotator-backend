@@ -1702,14 +1702,18 @@ def build_tail_page_blocks(review: dict[str, Any]) -> list[tuple[str, list[str]]
             summary_lines.append(f"优势：{'；'.join(strengths[:2])}")
         if weaknesses:
             summary_lines.append(f"短板：{'；'.join(weaknesses[:2])}")
+        if guide.get("summary"):
+            summary_lines.append(f"结论：{compact_tail_text(guide.get('summary', ''), max_length=56, keep_two_clauses=True)}")
         blocks.append(("总评", summary_lines))
 
     jd_keywords = [str(item).strip() for item in review.get("jd_keywords", []) if str(item).strip()]
     if jd_keywords:
-        signal_lines = [f"关键词：{'、'.join(jd_keywords[:8])}"]
+        signal_lines = [f"关键词：{'、'.join(jd_keywords[:4])}"]
+        if len(jd_keywords) > 4:
+            signal_lines.append(f"补词：{'、'.join(jd_keywords[4:8])}")
         responsibilities = [str(item).strip() for item in review.get("jd_responsibilities", []) if str(item).strip()]
-        if responsibilities:
-            signal_lines.append(f"核心职责：{compact_tail_text(responsibilities[0], max_length=58, keep_two_clauses=True)}")
+        for responsibility in responsibilities[:2]:
+            signal_lines.append(f"核心职责：{compact_tail_text(responsibility, max_length=58, keep_two_clauses=True)}")
         hard_skills = [str(item).strip() for item in review.get("jd_hard_skills", []) if str(item).strip()]
         soft_skills = [str(item).strip() for item in review.get("jd_soft_skills", []) if str(item).strip()]
         if hard_skills:
@@ -1730,16 +1734,23 @@ def build_tail_page_blocks(review: dict[str, Any]) -> list[tuple[str, list[str]]
             "clarity": translate_assessment_label(assessment.get("clarity", "")),
             "fit": translate_assessment_label(assessment.get("fit", "")),
         }
+        dimension_rank = {"低": 0, "中": 1, "高": 2}
         weakest_dimension = min(
             ("keyword_coverage", "professionalism", "clarity", "fit"),
-            key=lambda key: {"低": 0, "中": 1, "高": 2}.get(assessment_labels[key], 1),
+            key=lambda key: dimension_rank.get(assessment_labels[key], 1),
         )
-        weakest_label = {
+        strongest_dimension = max(
+            ("keyword_coverage", "professionalism", "clarity", "fit"),
+            key=lambda key: dimension_rank.get(assessment_labels[key], 1),
+        )
+        dimension_labels = {
             "keyword_coverage": "覆盖",
             "professionalism": "专业",
             "clarity": "清晰",
             "fit": "匹配",
-        }[weakest_dimension]
+        }
+        weakest_label = dimension_labels[weakest_dimension]
+        strongest_label = dimension_labels[strongest_dimension]
         blocks.append(
             (
                 "匹配结论",
@@ -1752,6 +1763,15 @@ def build_tail_page_blocks(review: dict[str, Any]) -> list[tuple[str, list[str]]
                         f"{assessment_labels['fit']}"
                     ),
                     f"当前判断：{compact_tail_text(guide.get('headline', '') or guide.get('summary', ''), max_length=34, keep_two_clauses=True)}",
+                    (
+                        "投递建议："
+                        + (
+                            "建议先深改后投，把高风险问题和岗位定位先修齐。"
+                            if guide.get("recommended", True)
+                            else "可先按当前建议改一轮，再继续投递验证反馈。"
+                        )
+                    ),
+                    f"当前强项：{strongest_label}表达相对稳定，可继续保留并前置。",
                     f"最弱项：先补{weakest_label}表达，再提整体匹配度。",
                 ],
             )
@@ -1768,15 +1788,17 @@ def build_tail_page_blocks(review: dict[str, Any]) -> list[tuple[str, list[str]]
         next_lines.append(f"补齐：{'；'.join(weaknesses[:2])}")
     focus_items = guide.get("session_focus") or guide.get("reasons") or []
     next_lines.extend(f"- {compact_tail_text(item, max_length=46)}" for item in focus_items[:2])
+    if len(focus_items) > 2:
+        next_lines.append(f"- {compact_tail_text(focus_items[2], max_length=46)}")
     if guide.get("prep_items"):
         next_lines.append(
             "素材："
             + "；".join(compact_tail_text(item, max_length=24) for item in guide.get("prep_items", [])[:2])
         )
-    if len(next_lines) < 5 and len(focus_items) > 2:
-        next_lines.append(f"- {compact_tail_text(focus_items[2], max_length=46)}")
+    if guide.get("cta"):
+        next_lines.append(f"动作：{compact_tail_text(guide.get('cta', ''), max_length=50, keep_two_clauses=True)}")
     if next_lines:
-        blocks.append(("下一轮重点", next_lines[:5]))
+        blocks.append(("下一轮重点", next_lines[:6]))
     return blocks
 
 
@@ -1788,18 +1810,18 @@ def layout_tail_block(
     body_font: ImageFont.ImageFont,
     max_width: int,
 ) -> tuple[list[str], list[str], int]:
-    title_lines, title_height = measure_wrapped_text(draw, title, title_font, max_width, 30)
+    title_lines, title_height = measure_wrapped_text(draw, title, title_font, max_width, 32)
     wrapped_body_lines: list[str] = []
     body_height = 0
     for line in lines:
-        wrapped_lines, wrapped_height = measure_wrapped_text(draw, line, body_font, max_width, 22)
+        wrapped_lines, wrapped_height = measure_wrapped_text(draw, line, body_font, max_width, 24)
         wrapped_body_lines.extend(wrapped_lines)
         wrapped_body_lines.append("")
-        body_height += wrapped_height + 4
+        body_height += wrapped_height + 6
     if wrapped_body_lines and not wrapped_body_lines[-1]:
         wrapped_body_lines.pop()
-        body_height -= 4
-    total_height = 18 + title_height + 6 + body_height + 18
+        body_height -= 6
+    total_height = 22 + title_height + 8 + body_height + 22
     return title_lines, wrapped_body_lines, total_height
 
 
@@ -1848,14 +1870,14 @@ def draw_tail_block(
     )
     for line in title_lines:
         draw.text((content_x, content_y), line, font=title_font, fill=(35, 31, 32))
-        content_y += 28
-    content_y += 6
+        content_y += 30
+    content_y += 8
     for line in body_lines:
         if line:
             draw.text((content_x, content_y), line, font=body_font, fill=(72, 64, 58))
-            content_y += 22
+            content_y += 24
         else:
-            content_y += 4
+            content_y += 6
 
 
 def render_tail_pages(
@@ -1870,15 +1892,15 @@ def render_tail_pages(
         return []
 
     title_font = load_font(30, family="serif")
-    section_font = load_font(21, family="sans")
-    body_font = load_font(17, family="sans")
+    section_font = load_font(22, family="sans")
+    body_font = load_font(18, family="sans")
     small_font = load_font(14, family="sans")
 
     scratch = ImageDraw.Draw(Image.new("RGB", (10, 10)))
     margin_x = 44
     top_margin = 112
     bottom_margin = 38
-    block_spacing = 12
+    block_spacing = 14
     content_width = page_width - margin_x * 2
 
     pages: list[Path] = []

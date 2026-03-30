@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageChops, ImageDraw
 
 
 SCRIPT_PATH = Path(__file__).resolve().parents[1] / "tools" / "resume-review-annotator-v2.py"
@@ -117,6 +117,7 @@ class AnnotatorLayoutTests(unittest.TestCase):
         self.assertTrue(any(line.startswith("优势：") for line in block_map["总评"]))
         self.assertGreaterEqual(len(block_map["匹配结论"]), 2)
         self.assertTrue(any(line.startswith("当前判断：") for line in block_map["匹配结论"]))
+        self.assertTrue(any(line.startswith("投递建议：") for line in block_map["匹配结论"]))
         self.assertEqual(len(block_map["优先修改方向"]), 4)
         self.assertTrue(any(line.startswith("素材：") for line in block_map["下一轮重点"]))
 
@@ -150,8 +151,13 @@ class AnnotatorLayoutTests(unittest.TestCase):
                 page_width=1600,
                 page_height=2200,
             )
+            image = Image.open(pages[0]).convert("RGB")
+            background = Image.new("RGB", image.size, image.getpixel((10, 10)))
+            bbox = ImageChops.difference(image, background).getbbox()
 
         self.assertEqual(len(pages), 1)
+        self.assertIsNotNone(bbox)
+        self.assertGreater(bbox[3] / image.size[1], 0.3)
 
 
 if __name__ == "__main__":
