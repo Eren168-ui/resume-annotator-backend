@@ -366,33 +366,36 @@ class Rect:
 def load_font(size: int, family: str = "sans") -> ImageFont.ImageFont | ImageFont.FreeTypeFont:
     if family == "serif":
         candidates = [
-            "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
-            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-            "/usr/share/fonts/truetype/noto/NotoSerifCJK-Regular.ttc",
-            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-            "/System/Library/Fonts/Supplemental/Songti.ttc",
-            "/System/Library/Fonts/Songti.ttc",
-            "/System/Library/Fonts/Supplemental/Times New Roman.ttf",
-            "/System/Library/Fonts/Supplemental/Georgia.ttf",
-            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+            ("/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc", 2),
+            ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 2),
+            ("/usr/share/fonts/truetype/noto/NotoSerifCJK-Regular.ttc", 2),
+            ("/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc", 2),
+            ("/System/Library/Fonts/Supplemental/Songti.ttc", None),
+            ("/System/Library/Fonts/Songti.ttc", None),
+            ("/System/Library/Fonts/Supplemental/Times New Roman.ttf", None),
+            ("/System/Library/Fonts/Supplemental/Georgia.ttf", None),
+            ("/System/Library/Fonts/Supplemental/Arial Unicode.ttf", None),
         ]
     else:
         candidates = [
-            "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
-            "/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc",
-            "/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc",
-            "/usr/share/fonts/truetype/noto/NotoSerifCJK-Regular.ttc",
-            "/System/Library/Fonts/PingFang.ttc",
-            "/System/Library/Fonts/Supplemental/PingFang.ttc",
-            "/System/Library/Fonts/Supplemental/Avenir Next.ttc",
-            "/System/Library/Fonts/Supplemental/HelveticaNeue.ttc",
-            "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
-            "/Library/Fonts/Arial Unicode.ttf",
+            ("/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc", 2),
+            ("/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc", 2),
+            ("/usr/share/fonts/truetype/noto/NotoSansCJK-Regular.ttc", 2),
+            ("/usr/share/fonts/truetype/noto/NotoSerifCJK-Regular.ttc", 2),
+            ("/System/Library/Fonts/PingFang.ttc", None),
+            ("/System/Library/Fonts/Supplemental/PingFang.ttc", None),
+            ("/System/Library/Fonts/Supplemental/Avenir Next.ttc", None),
+            ("/System/Library/Fonts/Supplemental/HelveticaNeue.ttc", None),
+            ("/System/Library/Fonts/Supplemental/Arial Unicode.ttf", None),
+            ("/Library/Fonts/Arial Unicode.ttf", None),
         ]
-    for path in candidates:
+    for path, index in candidates:
         if os.path.exists(path):
             try:
-                return ImageFont.truetype(path, size=size)
+                kwargs = {"size": size}
+                if index is not None:
+                    kwargs["index"] = index
+                return ImageFont.truetype(path, **kwargs)
             except OSError:
                 pass
     return ImageFont.load_default()
@@ -1503,6 +1506,16 @@ def normalize_note_text(text: str) -> str:
     text = str(text or "").strip()
     if not text:
         return ""
+    replacements = {
+        "｜": "|",
+        "→": "->",
+        "①": "1.",
+        "②": "2.",
+        "③": "3.",
+        "④": "4.",
+    }
+    for source, target in replacements.items():
+        text = text.replace(source, target)
     text = text.replace("‘", "'").replace("’", "'").replace("“", '"').replace("”", '"')
     while "'" in text:
         updated = text.replace("'", '"')
@@ -1546,6 +1559,36 @@ def compact_note_text(text: str, max_length: int = 36, prefer_first_clause: bool
     if len(text) > max_length:
         text = text[: max_length - 1].rstrip("，；：、,. ") + "…"
     return text
+
+
+def compact_tail_text(text: str, max_length: int = 78, keep_two_clauses: bool = False) -> str:
+    text = normalize_note_text(text)
+    if not text:
+        return ""
+    segments = [segment.strip() for segment in re.split(r"[。！？]", text) if segment.strip()]
+    if segments:
+        text = "。".join(segments[:2] if keep_two_clauses else segments[:1])
+    clauses = [segment.strip() for segment in re.split(r"[，；：]", text) if segment.strip()]
+    if clauses:
+        picked = clauses[:2] if keep_two_clauses else clauses[:1]
+        text = "，".join(picked)
+    text = " ".join(text.split()).strip("，；：、,. ")
+    if len(text) > max_length:
+        text = text[: max_length - 1].rstrip("，；：、,. ") + "…"
+    return text
+
+
+def compact_tail_issue_line(issue: dict[str, Any]) -> str:
+    title = compact_tail_text(issue.get("title", "") or "未命名问题", max_length=16)
+    comment = compact_tail_text(issue.get("comment", ""), max_length=28)
+    rewrite_tip = compact_tail_text(
+        issue.get("rewrite_tip") or issue.get("rewrite_example") or "",
+        max_length=24,
+    )
+    parts = [f"{title}：{comment or '需要直接改写'}"]
+    if rewrite_tip:
+        parts.append(f"改：{rewrite_tip}")
+    return " ".join(part for part in parts if part).strip()
 
 
 def build_note_body_parts(issue: dict[str, Any]) -> list[str]:
@@ -1652,74 +1695,65 @@ def build_tail_page_blocks(review: dict[str, Any]) -> list[tuple[str, list[str]]
 
     summary = str(review.get("summary", "")).strip()
     if summary:
-        blocks.append(("总评", [summary]))
+        blocks.append(("总评", [compact_tail_text(summary, max_length=96, keep_two_clauses=True)]))
 
     jd_keywords = [str(item).strip() for item in review.get("jd_keywords", []) if str(item).strip()]
     if jd_keywords:
+        signal_lines = [f"关键词：{'、'.join(jd_keywords[:8])}"]
+        responsibilities = [str(item).strip() for item in review.get("jd_responsibilities", []) if str(item).strip()]
+        if responsibilities:
+            signal_lines.append(f"核心职责：{compact_tail_text(responsibilities[0], max_length=48)}")
+        skill_tokens = [
+            *[str(item).strip() for item in review.get("jd_hard_skills", []) if str(item).strip()],
+            *[str(item).strip() for item in review.get("jd_soft_skills", []) if str(item).strip()],
+        ]
+        if skill_tokens:
+            signal_lines.append(f"关键能力：{'、'.join(skill_tokens[:6])}")
         blocks.append(
             (
-                "JD 解读",
-                [
-                    f"关键词：{'、'.join(jd_keywords[:12])}",
-                    f"硬技能：{'、'.join(review.get('jd_hard_skills', [])) or '暂无'}",
-                    f"软技能：{'、'.join(review.get('jd_soft_skills', [])) or '暂无'}",
-                    f"核心职责：{'、'.join(review.get('jd_responsibilities', [])) or '暂无'}",
-                ],
+                "JD 关键信号",
+                signal_lines,
             )
         )
 
     if assessment:
         blocks.append(
             (
-                "简历匹配",
+                "匹配结论",
                 [
-                    f"关键词覆盖率：{translate_assessment_label(assessment.get('keyword_coverage', ''))}",
-                    f"专业性：{translate_assessment_label(assessment.get('professionalism', ''))}",
-                    f"清晰度：{translate_assessment_label(assessment.get('clarity', ''))}",
-                    f"匹配度：{translate_assessment_label(assessment.get('fit', ''))}",
+                    (
+                        "覆盖 / 专业 / 清晰 / 匹配："
+                        f"{translate_assessment_label(assessment.get('keyword_coverage', ''))} / "
+                        f"{translate_assessment_label(assessment.get('professionalism', ''))} / "
+                        f"{translate_assessment_label(assessment.get('clarity', ''))} / "
+                        f"{translate_assessment_label(assessment.get('fit', ''))}"
+                    )
                 ],
             )
         )
 
     issues = review.get("issues", [])
     if issues:
-        issue_lines = []
-        for issue in issues[:4]:
-            title = str(issue.get("title", "")).strip() or "未命名问题"
-            comment = str(issue.get("comment", "")).strip() or "未提供问题描述"
-            rewrite_tip = str(issue.get("rewrite_tip", "")).strip()
-            line = f"{title}：{comment}"
-            if rewrite_tip:
-                line += f" 改法：{rewrite_tip}"
-            issue_lines.append(line)
-        blocks.append(("优先修改方向", issue_lines))
+        blocks.append(("优先修改方向", [compact_tail_issue_line(issue) for issue in issues[:3]]))
 
-    strengths = [str(item).strip() for item in review.get("strengths", []) if str(item).strip()]
+    next_lines: list[str] = []
+    strengths = [compact_tail_text(item, max_length=24) for item in review.get("strengths", []) if str(item).strip()]
+    weaknesses = [compact_tail_text(item, max_length=24) for item in review.get("weaknesses", []) if str(item).strip()]
     if strengths:
-        blocks.append(("这份简历已有基础", strengths[:3]))
-
-    weaknesses = [str(item).strip() for item in review.get("weaknesses", []) if str(item).strip()]
+        next_lines.append(f"保留：{'；'.join(strengths[:2])}")
     if weaknesses:
-        blocks.append(("当前最大短板", weaknesses[:3]))
-
-    blocks.append(
-        (
-            "1v1 深度咨询建议",
-            [
-                guide.get("headline", "").strip(),
-                guide.get("summary", "").strip(),
-            ],
-        )
-    )
-    if guide.get("reasons"):
-        blocks.append(("为什么建议继续", [f"- {item}" for item in guide.get("reasons", [])[:4]]))
+        next_lines.append(f"补齐：{'；'.join(weaknesses[:2])}")
     if guide.get("session_focus"):
-        blocks.append(("1v1 优先处理", [f"- {item}" for item in guide.get("session_focus", [])[:5]]))
+        next_lines.extend(f"- {compact_tail_text(item, max_length=42)}" for item in guide.get("session_focus", [])[:3])
+    elif guide.get("reasons"):
+        next_lines.extend(f"- {compact_tail_text(item, max_length=42)}" for item in guide.get("reasons", [])[:3])
     if guide.get("prep_items"):
-        blocks.append(("你下一轮先补这些素材", [f"- {item}" for item in guide.get("prep_items", [])[:4]]))
-    cta = guide.get("cta", "").strip()
-    if cta:
-        blocks.append(("下一步", [cta]))
+        next_lines.append(
+            "素材："
+            + "；".join(compact_tail_text(item, max_length=20) for item in guide.get("prep_items", [])[:2])
+        )
+    if next_lines:
+        blocks.append(("下一轮重点", next_lines[:5]))
     return blocks
 
 
@@ -1731,11 +1765,11 @@ def layout_tail_block(
     body_font: ImageFont.ImageFont,
     max_width: int,
 ) -> tuple[list[str], list[str], int]:
-    title_lines, title_height = measure_wrapped_text(draw, title, title_font, max_width, 34)
+    title_lines, title_height = measure_wrapped_text(draw, title, title_font, max_width, 30)
     wrapped_body_lines: list[str] = []
     body_height = 0
     for line in lines:
-        wrapped_lines, wrapped_height = measure_wrapped_text(draw, line, body_font, max_width, 28)
+        wrapped_lines, wrapped_height = measure_wrapped_text(draw, line, body_font, max_width, 24)
         wrapped_body_lines.extend(wrapped_lines)
         wrapped_body_lines.append("")
         body_height += wrapped_height + 6
@@ -1791,12 +1825,12 @@ def draw_tail_block(
     )
     for line in title_lines:
         draw.text((content_x, content_y), line, font=title_font, fill=(35, 31, 32))
-        content_y += 34
+        content_y += 30
     content_y += 8
     for line in body_lines:
         if line:
             draw.text((content_x, content_y), line, font=body_font, fill=(72, 64, 58))
-            content_y += 28
+            content_y += 24
         else:
             content_y += 6
 
@@ -1812,16 +1846,16 @@ def render_tail_pages(
     if not blocks:
         return []
 
-    title_font = load_font(34, family="serif")
-    section_font = load_font(24, family="sans")
-    body_font = load_font(20, family="sans")
-    small_font = load_font(17, family="sans")
+    title_font = load_font(30, family="serif")
+    section_font = load_font(22, family="sans")
+    body_font = load_font(18, family="sans")
+    small_font = load_font(15, family="sans")
 
     scratch = ImageDraw.Draw(Image.new("RGB", (10, 10)))
     margin_x = 48
-    top_margin = 120
-    bottom_margin = 52
-    block_spacing = 20
+    top_margin = 116
+    bottom_margin = 46
+    block_spacing = 16
     content_width = page_width - margin_x * 2
 
     pages: list[Path] = []

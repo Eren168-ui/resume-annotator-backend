@@ -31,6 +31,12 @@ def save_upload(task_id: str, filename: str, data: bytes) -> Path:
     return dest
 
 
+def delete_task_files(task_id: str) -> None:
+    for directory in (UPLOADS_DIR / task_id, OUTPUTS_DIR / task_id):
+        if directory.exists():
+            shutil.rmtree(directory, ignore_errors=True)
+
+
 # ── Paths for known output artifacts ─────────────────────────────────────────
 
 def result_json_path(task_id: str) -> Path:

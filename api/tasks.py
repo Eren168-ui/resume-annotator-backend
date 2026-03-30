@@ -8,11 +8,11 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, BackgroundTasks
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, Response
 from fastapi.responses import FileResponse
 
 from api.auth import require_auth
-from models.schemas import CreateTaskOut, TaskListOut, TaskOut, TaskResult, DownloadUrlOut
+from models.schemas import CreateTaskOut, TaskListOut, TaskOut, TaskStatus
 from services import task_service, storage
 from services.processor import process_task
 
@@ -70,6 +70,26 @@ async def get_task(task_id: str, _user: dict = Depends(require_auth)):
     if task is None:
         raise HTTPException(status_code=404, detail={"message": f"任务 {task_id} 不存在"})
     return task
+
+
+@router.delete("/tasks/{task_id}", status_code=204)
+async def delete_task(task_id: str, _user: dict = Depends(require_auth)):
+    task = task_service.get_task(task_id)
+    if task is None:
+        raise HTTPException(status_code=404, detail={"message": f"任务 {task_id} 不存在"})
+
+    if task["status"] in {TaskStatus.PENDING, TaskStatus.PROCESSING}:
+        raise HTTPException(
+            status_code=409,
+            detail={"message": "处理中或排队中的任务暂不支持删除，请等待任务结束后再删除。"},
+        )
+
+    deleted = task_service.delete_task(task_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail={"message": f"任务 {task_id} 不存在"})
+
+    storage.delete_task_files(task_id)
+    return Response(status_code=204)
 
 
 # ── Create task ────────────────────────────────────────────────────────────────

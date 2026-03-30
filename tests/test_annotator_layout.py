@@ -1,5 +1,6 @@
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -78,7 +79,71 @@ class AnnotatorLayoutTests(unittest.TestCase):
             font = self.annotator.load_font(24, family="sans")
 
         self.assertEqual(font, "linux-font")
-        truetype.assert_called_once_with(linux_font, size=24)
+        truetype.assert_called_once_with(linux_font, size=24, index=2)
+
+    def test_build_tail_page_blocks_compacts_to_single_page_summary(self):
+        review = {
+            "summary": "候选人基础较好，但与目标岗位的电商活动运营场景仍有明显错位，需要把经历改成贴岗版本。",
+            "jd_keywords": ["天猫", "活动策划", "活动执行", "曝光", "转化率", "数据分析", "资源分配"],
+            "jd_hard_skills": ["活动执行", "数据分析", "资源分配"],
+            "jd_soft_skills": ["沟通协调", "团队协作"],
+            "jd_responsibilities": ["负责店铺日常活动策划与执行，提升曝光与转化率"],
+            "match_assessment": {
+                "keyword_coverage": "medium",
+                "professionalism": "medium",
+                "clarity": "medium",
+                "fit": "medium",
+            },
+            "strengths": ["有项目统筹能力", "有活动执行经验", "逻辑清晰"],
+            "weaknesses": ["电商场景经验不足", "成果量化不够", "关键词不够贴岗"],
+            "issues": [
+                {"title": "求职意向不贴岗", "comment": "目前岗位定位过泛。", "rewrite_tip": "直接写活动策划执行岗。"},
+                {"title": "成果缺少数字", "comment": "难判断真实影响力。", "rewrite_tip": "补人数、场次、转化或反馈。"},
+                {"title": "电商关键词不足", "comment": "容易被系统忽略。", "rewrite_tip": "补曝光、转化、资源位等词。"},
+                {"title": "项目排序靠后", "comment": "核心经历没有顶上来。", "rewrite_tip": "把最贴岗经历前置。"},
+            ],
+        }
+
+        blocks = self.annotator.build_tail_page_blocks(review)
+        titles = [title for title, _lines in blocks]
+
+        self.assertEqual(
+            titles,
+            ["总评", "JD 关键信号", "匹配结论", "优先修改方向", "下一轮重点"],
+        )
+        self.assertLessEqual(len(blocks), 5)
+
+    def test_render_tail_pages_prefers_single_page_summary(self):
+        review = {
+            "summary": "候选人基础不错，但需要把目标岗位版本、关键词和成果表达统一起来。",
+            "jd_keywords": ["天猫", "活动策划", "活动执行", "转化率", "曝光", "资源位", "数据分析"],
+            "jd_hard_skills": ["活动执行", "数据分析", "资源分配"],
+            "jd_soft_skills": ["沟通协调", "团队协作"],
+            "jd_responsibilities": ["负责店铺活动策划与执行，提升曝光与转化率"],
+            "match_assessment": {
+                "keyword_coverage": "medium",
+                "professionalism": "medium",
+                "clarity": "medium",
+                "fit": "medium",
+            },
+            "strengths": ["项目统筹不错", "执行经验完整"],
+            "weaknesses": ["场景不贴岗", "成果缺数字"],
+            "issues": [
+                {"title": "求职意向不贴岗", "comment": "岗位方向偏了。", "rewrite_tip": "改成活动策划执行岗。"},
+                {"title": "成果缺少数字", "comment": "结果不够可验证。", "rewrite_tip": "补场次、人数、反馈。"},
+                {"title": "关键词不足", "comment": "贴岗词太少。", "rewrite_tip": "补曝光、转化、资源位。"},
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            pages = self.annotator.render_tail_pages(
+                review,
+                Path(tmp_dir),
+                page_width=1600,
+                page_height=2200,
+            )
+
+        self.assertEqual(len(pages), 1)
 
 
 if __name__ == "__main__":

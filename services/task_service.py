@@ -218,3 +218,10 @@ def get_task_result(task_id: str) -> Optional[dict]:
     if not row["result_json"]:
         return None
     return json.loads(row["result_json"])
+
+
+def delete_task(task_id: str) -> bool:
+    with get_connection() as conn:
+        cursor = conn.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        conn.commit()
+    return cursor.rowcount > 0
