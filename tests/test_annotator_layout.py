@@ -112,6 +112,13 @@ class AnnotatorLayoutTests(unittest.TestCase):
             ["总评", "JD 关键信号", "匹配结论", "优先修改方向", "下一轮重点"],
         )
         self.assertLessEqual(len(blocks), 5)
+        block_map = {title: lines for title, lines in blocks}
+        self.assertGreaterEqual(len(block_map["总评"]), 2)
+        self.assertTrue(any(line.startswith("优势：") for line in block_map["总评"]))
+        self.assertGreaterEqual(len(block_map["匹配结论"]), 2)
+        self.assertTrue(any(line.startswith("当前判断：") for line in block_map["匹配结论"]))
+        self.assertEqual(len(block_map["优先修改方向"]), 4)
+        self.assertTrue(any(line.startswith("素材：") for line in block_map["下一轮重点"]))
 
     def test_render_tail_pages_prefers_single_page_summary(self):
         review = {
@@ -132,6 +139,7 @@ class AnnotatorLayoutTests(unittest.TestCase):
                 {"title": "求职意向不贴岗", "comment": "岗位方向偏了。", "rewrite_tip": "改成活动策划执行岗。"},
                 {"title": "成果缺少数字", "comment": "结果不够可验证。", "rewrite_tip": "补场次、人数、反馈。"},
                 {"title": "关键词不足", "comment": "贴岗词太少。", "rewrite_tip": "补曝光、转化、资源位。"},
+                {"title": "项目排序靠后", "comment": "核心经历没有顶上来。", "rewrite_tip": "把最贴岗项目提前。"},
             ],
         }
 
