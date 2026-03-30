@@ -159,6 +159,44 @@ class AnnotatorLayoutTests(unittest.TestCase):
         self.assertIsNotNone(bbox)
         self.assertGreater(bbox[3] / image.size[1], 0.3)
 
+    def test_render_tail_pages_scales_for_large_pdf_canvas(self):
+        review = {
+            "summary": "候选人基础不错，但需要把目标岗位版本、关键词和成果表达统一起来。",
+            "jd_keywords": ["天猫", "活动策划", "活动执行", "转化率", "曝光", "资源位", "数据分析"],
+            "jd_hard_skills": ["活动执行", "数据分析", "资源分配"],
+            "jd_soft_skills": ["沟通协调", "团队协作"],
+            "jd_responsibilities": ["负责店铺活动策划与执行，提升曝光与转化率"],
+            "match_assessment": {
+                "keyword_coverage": "medium",
+                "professionalism": "medium",
+                "clarity": "medium",
+                "fit": "medium",
+            },
+            "strengths": ["项目统筹不错", "执行经验完整"],
+            "weaknesses": ["场景不贴岗", "成果缺数字"],
+            "issues": [
+                {"title": "求职意向不贴岗", "comment": "岗位方向偏了。", "rewrite_tip": "改成活动策划执行岗。"},
+                {"title": "成果缺少数字", "comment": "结果不够可验证。", "rewrite_tip": "补场次、人数、反馈。"},
+                {"title": "关键词不足", "comment": "贴岗词太少。", "rewrite_tip": "补曝光、转化、资源位。"},
+                {"title": "项目排序靠后", "comment": "核心经历没有顶上来。", "rewrite_tip": "把最贴岗项目提前。"},
+            ],
+        }
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            pages = self.annotator.render_tail_pages(
+                review,
+                Path(tmp_dir),
+                page_width=10819,
+                page_height=10965,
+            )
+            image = Image.open(pages[0]).convert("RGB")
+            background = Image.new("RGB", image.size, image.getpixel((10, 10)))
+            bbox = ImageChops.difference(image, background).getbbox()
+
+        self.assertEqual(len(pages), 1)
+        self.assertIsNotNone(bbox)
+        self.assertGreater(bbox[3] / image.size[1], 0.3)
+
 
 if __name__ == "__main__":
     unittest.main()

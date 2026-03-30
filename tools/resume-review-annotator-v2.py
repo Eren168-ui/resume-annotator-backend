@@ -1809,19 +1809,25 @@ def layout_tail_block(
     title_font: ImageFont.ImageFont,
     body_font: ImageFont.ImageFont,
     max_width: int,
+    title_step: int,
+    body_step: int,
+    body_gap: int,
+    top_padding: int,
+    title_gap: int,
+    bottom_padding: int,
 ) -> tuple[list[str], list[str], int]:
-    title_lines, title_height = measure_wrapped_text(draw, title, title_font, max_width, 32)
+    title_lines, title_height = measure_wrapped_text(draw, title, title_font, max_width, title_step)
     wrapped_body_lines: list[str] = []
     body_height = 0
     for line in lines:
-        wrapped_lines, wrapped_height = measure_wrapped_text(draw, line, body_font, max_width, 24)
+        wrapped_lines, wrapped_height = measure_wrapped_text(draw, line, body_font, max_width, body_step)
         wrapped_body_lines.extend(wrapped_lines)
         wrapped_body_lines.append("")
-        body_height += wrapped_height + 6
+        body_height += wrapped_height + body_gap
     if wrapped_body_lines and not wrapped_body_lines[-1]:
         wrapped_body_lines.pop()
-        body_height -= 6
-    total_height = 22 + title_height + 8 + body_height + 22
+        body_height -= body_gap
+    total_height = top_padding + title_height + title_gap + body_height + bottom_padding
     return title_lines, wrapped_body_lines, total_height
 
 
@@ -1832,6 +1838,12 @@ def estimate_tail_block_height(
     title_font: ImageFont.ImageFont,
     body_font: ImageFont.ImageFont,
     max_width: int,
+    title_step: int,
+    body_step: int,
+    body_gap: int,
+    top_padding: int,
+    title_gap: int,
+    bottom_padding: int,
 ) -> int:
     _title_lines, _body_lines, total_height = layout_tail_block(
         draw=draw,
@@ -1840,6 +1852,12 @@ def estimate_tail_block_height(
         title_font=title_font,
         body_font=body_font,
         max_width=max_width,
+        title_step=title_step,
+        body_step=body_step,
+        body_gap=body_gap,
+        top_padding=top_padding,
+        title_gap=title_gap,
+        bottom_padding=bottom_padding,
     )
     return total_height
 
@@ -1851,15 +1869,23 @@ def draw_tail_block(
     lines: list[str],
     title_font: ImageFont.ImageFont,
     body_font: ImageFont.ImageFont,
+    layout: dict[str, int],
 ) -> None:
     x1, y1, x2, y2 = box
-    draw.rounded_rectangle((x1 + 3, y1 + 6, x2 + 3, y2 + 6), radius=22, fill=(230, 228, 224))
-    draw.rounded_rectangle(box, radius=22, outline=(228, 221, 214), width=2, fill=(255, 252, 248))
-    draw.rounded_rectangle((x1 + 18, y1 + 18, x1 + 28, y1 + 28), radius=5, fill=(185, 28, 28))
+    shadow_dx = layout["shadow_dx"]
+    shadow_dy = layout["shadow_dy"]
+    radius = layout["radius"]
+    dot_x = layout["dot_x"]
+    dot_y = layout["dot_y"]
+    dot_size = layout["dot_size"]
+    border_width = layout["border_width"]
+    draw.rounded_rectangle((x1 + shadow_dx, y1 + shadow_dy, x2 + shadow_dx, y2 + shadow_dy), radius=radius, fill=(230, 228, 224))
+    draw.rounded_rectangle(box, radius=radius, outline=(228, 221, 214), width=border_width, fill=(255, 252, 248))
+    draw.rounded_rectangle((x1 + dot_x, y1 + dot_y, x1 + dot_x + dot_size, y1 + dot_y + dot_size), radius=max(2, dot_size // 2), fill=(185, 28, 28))
 
-    content_x = x1 + 42
-    content_y = y1 + 12
-    content_width = (x2 - x1) - 64
+    content_x = x1 + layout["content_x"]
+    content_y = y1 + layout["content_y"]
+    content_width = (x2 - x1) - layout["content_width_padding"]
     title_lines, body_lines, _total_height = layout_tail_block(
         draw=draw,
         title=title,
@@ -1867,17 +1893,56 @@ def draw_tail_block(
         title_font=title_font,
         body_font=body_font,
         max_width=content_width,
+        title_step=layout["title_step"],
+        body_step=layout["body_step"],
+        body_gap=layout["body_gap"],
+        top_padding=layout["top_padding"],
+        title_gap=layout["title_gap"],
+        bottom_padding=layout["bottom_padding"],
     )
     for line in title_lines:
         draw.text((content_x, content_y), line, font=title_font, fill=(35, 31, 32))
-        content_y += 30
-    content_y += 8
+        content_y += layout["title_step"]
+    content_y += layout["title_gap"]
     for line in body_lines:
         if line:
             draw.text((content_x, content_y), line, font=body_font, fill=(72, 64, 58))
-            content_y += 24
+            content_y += layout["body_step"]
         else:
-            content_y += 6
+            content_y += layout["body_gap"]
+
+
+def build_tail_page_layout(page_width: int, page_height: int) -> dict[str, int]:
+    scale = max(1.0, min(page_width / 1600, page_height / 2200))
+    return {
+        "title_font_size": max(30, round(30 * scale)),
+        "section_font_size": max(22, round(22 * scale)),
+        "body_font_size": max(18, round(18 * scale)),
+        "small_font_size": max(14, round(14 * scale)),
+        "margin_x": max(44, round(44 * scale)),
+        "top_margin": max(112, round(112 * scale)),
+        "bottom_margin": max(38, round(38 * scale)),
+        "block_spacing": max(14, round(14 * scale)),
+        "title_step": max(32, round(32 * scale)),
+        "body_step": max(24, round(24 * scale)),
+        "body_gap": max(6, round(6 * scale)),
+        "top_padding": max(22, round(22 * scale)),
+        "title_gap": max(8, round(8 * scale)),
+        "bottom_padding": max(22, round(22 * scale)),
+        "shadow_dx": max(3, round(3 * scale)),
+        "shadow_dy": max(6, round(6 * scale)),
+        "radius": max(22, round(22 * scale)),
+        "border_width": max(2, round(2 * scale)),
+        "dot_x": max(18, round(18 * scale)),
+        "dot_y": max(18, round(18 * scale)),
+        "dot_size": max(10, round(10 * scale)),
+        "content_x": max(42, round(42 * scale)),
+        "content_y": max(12, round(12 * scale)),
+        "content_width_padding": max(64, round(64 * scale)),
+        "header_title_y": max(34, round(34 * scale)),
+        "header_subtitle_y": max(76, round(76 * scale)),
+        "header_line_y": max(104, round(104 * scale)),
+    }
 
 
 def render_tail_pages(
@@ -1891,16 +1956,17 @@ def render_tail_pages(
     if not blocks:
         return []
 
-    title_font = load_font(30, family="serif")
-    section_font = load_font(22, family="sans")
-    body_font = load_font(18, family="sans")
-    small_font = load_font(14, family="sans")
+    layout = build_tail_page_layout(page_width, page_height)
+    title_font = load_font(layout["title_font_size"], family="serif")
+    section_font = load_font(layout["section_font_size"], family="sans")
+    body_font = load_font(layout["body_font_size"], family="sans")
+    small_font = load_font(layout["small_font_size"], family="sans")
 
     scratch = ImageDraw.Draw(Image.new("RGB", (10, 10)))
-    margin_x = 44
-    top_margin = 112
-    bottom_margin = 38
-    block_spacing = 14
+    margin_x = layout["margin_x"]
+    top_margin = layout["top_margin"]
+    bottom_margin = layout["bottom_margin"]
+    block_spacing = layout["block_spacing"]
     content_width = page_width - margin_x * 2
 
     pages: list[Path] = []
@@ -1911,9 +1977,9 @@ def render_tail_pages(
 
     def draw_header(page_no: int) -> None:
         header_title = "岗位定向简历批注总结" if page_no == 1 else "岗位定向简历批注总结（续）"
-        draw.text((margin_x, 34), header_title, font=title_font, fill=(46, 39, 36))
-        draw.text((margin_x, 76), "用于交付总结和后续 1v1 引导", font=small_font, fill=(120, 111, 104))
-        draw.line((margin_x, 104, page_width - margin_x, 104), fill=(221, 213, 206), width=2)
+        draw.text((margin_x, layout["header_title_y"]), header_title, font=title_font, fill=(46, 39, 36))
+        draw.text((margin_x, layout["header_subtitle_y"]), "用于交付总结和后续 1v1 引导", font=small_font, fill=(120, 111, 104))
+        draw.line((margin_x, layout["header_line_y"], page_width - margin_x, layout["header_line_y"]), fill=(221, 213, 206), width=layout["border_width"])
 
     def save_page(page_no: int) -> None:
         path = output_dir / f"tail-page-{page_no:02d}.png"
@@ -1922,7 +1988,20 @@ def render_tail_pages(
 
     draw_header(page_index)
     for title, lines in blocks:
-        block_height = estimate_tail_block_height(scratch, title, lines, section_font, body_font, content_width - 64)
+        block_height = estimate_tail_block_height(
+            scratch,
+            title,
+            lines,
+            section_font,
+            body_font,
+            content_width - layout["content_width_padding"],
+            title_step=layout["title_step"],
+            body_step=layout["body_step"],
+            body_gap=layout["body_gap"],
+            top_padding=layout["top_padding"],
+            title_gap=layout["title_gap"],
+            bottom_padding=layout["bottom_padding"],
+        )
         if current_y + block_height > page_height - bottom_margin:
             save_page(page_index)
             page_index += 1
@@ -1931,7 +2010,7 @@ def render_tail_pages(
             draw_header(page_index)
             current_y = top_margin
         box = (margin_x, current_y, page_width - margin_x, current_y + block_height)
-        draw_tail_block(draw, box, title, lines, section_font, body_font)
+        draw_tail_block(draw, box, title, lines, section_font, body_font, layout)
         current_y = box[3] + block_spacing
 
     save_page(page_index)
