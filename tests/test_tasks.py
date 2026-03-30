@@ -60,5 +60,33 @@ class DeleteTaskRouteTests(unittest.TestCase):
         delete_task_files.assert_called_once_with("task-1")
 
 
+class TaskResultRouteTests(unittest.TestCase):
+    def test_get_task_result_rebuilds_download_manifest_from_existing_files(self):
+        manifest = {
+            "annotatedPdf": "annotated_task-1.pdf",
+            "markdownReport": "report_task-1.md",
+            "report": "report_task-1.html",
+            "jsonResult": "result_task-1.json",
+            "pageImages": [],
+        }
+
+        with (
+            mock.patch.object(
+                tasks.task_service,
+                "get_task",
+                return_value={"id": "task-1", "status": "completed"},
+            ),
+            mock.patch.object(
+                tasks.task_service,
+                "get_task_result",
+                return_value={"summary": "ok", "downloads": {"annotatedPdf": "old.pdf"}},
+            ),
+            mock.patch.object(tasks.storage, "build_download_manifest", return_value=manifest),
+        ):
+            result = asyncio.run(tasks.get_task_result("task-1", {"sub": "u1"}))
+
+        self.assertEqual(result["downloads"], manifest)
+
+
 if __name__ == "__main__":
     unittest.main()

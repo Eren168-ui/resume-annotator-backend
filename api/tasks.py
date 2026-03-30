@@ -186,14 +186,16 @@ async def get_task_result(task_id: str, _user: dict = Depends(require_auth)):
     result = task_service.get_task_result(task_id)
     if result is None:
         raise HTTPException(status_code=404, detail={"message": "结果数据不存在"})
-    return result
+    return {**result, "downloads": storage.build_download_manifest(task_id)}
 
 
 # ── Download ───────────────────────────────────────────────────────────────────
 
 _DOWNLOAD_META = {
     "annotated_pdf": ("annotated.pdf", "application/pdf"),
+    "markdown_report": ("report.md", "text/markdown; charset=utf-8"),
     "report": ("report.html", "text/html; charset=utf-8"),
+    "json_result": ("result.json", "application/json; charset=utf-8"),
 }
 
 
@@ -206,7 +208,12 @@ async def download_file(
     if file_key not in _DOWNLOAD_META:
         raise HTTPException(
             status_code=400,
-            detail={"message": f"不支持的文件类型: {file_key}。支持: annotated_pdf, report"},
+            detail={
+                "message": (
+                    f"不支持的文件类型: {file_key}。支持: "
+                    "annotated_pdf, markdown_report, report, json_result"
+                )
+            },
         )
 
     task = task_service.get_task(task_id)
@@ -230,6 +237,10 @@ async def download_file(
 
     if file_key == "annotated_pdf":
         readable_filename = f"{safe}简历批注.pdf"
+    elif file_key == "markdown_report":
+        readable_filename = f"{safe}分析报告.md"
+    elif file_key == "json_result":
+        readable_filename = f"{safe}分析结果.json"
     else:
         readable_filename = f"{safe}分析报告.html"
 
