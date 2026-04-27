@@ -2,6 +2,7 @@
 
 import logging
 import os
+import re
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,53 +29,41 @@ app = FastAPI(
     docs_url="/docs",
 )
 
-# CORS — allow the frontend origin(s)
-LOCAL_FRONTEND_ORIGINS = [
-    "http://localhost:4173",
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://localhost:5176",
-    "http://127.0.0.1:4173",
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:5175",
-    "http://127.0.0.1:5176",
-]
+
+def _split_origins(raw_value: str | None) -> list[str]:
+    if not raw_value:
+        return []
+    return [origin.strip() for origin in raw_value.split(",") if origin.strip()]
 
 
-def build_allowed_origins(
-    frontend_origin: str | None = None,
-    frontend_origins: str | None = None,
-    local_frontend_origins: list[str] | None = None,
-) -> list[str]:
-    """Build a stable deduped CORS allowlist.
+def _build_cors_settings() -> tuple[list[str], str | None]:
+    allow_origins = {
+        "http://localhost:5173",
+        "http://localhost:4173",
+    }
+    allow_origins.update(_split_origins(os.getenv("FRONTEND_ORIGIN", "http://localhost:5173")))
+    allow_origins.update(_split_origins(os.getenv("FRONTEND_ORIGINS")))
 
-    Supports either a single FRONTEND_ORIGIN or a comma-separated FRONTEND_ORIGINS
-    so production can allow both apex and www domains without code changes.
-    """
-    origins: list[str] = []
+    regex_parts: list[str] = []
+    pages_project = (os.getenv("CLOUDFLARE_PAGES_PROJECT") or "resume-annotator-b2b").strip()
+    if pages_project:
+        allow_origins.add(f"https://{pages_project}.pages.dev")
+        regex_parts.append(rf"^https://([a-z0-9-]+\.)?{re.escape(pages_project)}\.pages\.dev$")
 
-    if frontend_origin:
-        origins.append(frontend_origin.strip())
+    extra_origin_regex = (os.getenv("FRONTEND_ORIGIN_REGEX") or "").strip()
+    if extra_origin_regex:
+        regex_parts.append(extra_origin_regex)
 
-    if frontend_origins:
-        origins.extend(item.strip() for item in frontend_origins.split(","))
-
-    if local_frontend_origins:
-        origins.extend(local_frontend_origins)
-
-    return list(dict.fromkeys(origin for origin in origins if origin))
+    allow_origin_regex = "|".join(f"(?:{pattern})" for pattern in regex_parts) or None
+    return sorted(allow_origins), allow_origin_regex
 
 
-ALLOWED_ORIGINS = build_allowed_origins(
-    frontend_origin=os.getenv("FRONTEND_ORIGIN", "http://localhost:5173"),
-    frontend_origins=os.getenv("FRONTEND_ORIGINS", ""),
-    local_frontend_origins=LOCAL_FRONTEND_ORIGINS,
-)
+# CORS — allow production frontend + Cloudflare Pages preview domains.
+ALLOW_ORIGINS, ALLOW_ORIGIN_REGEX = _build_cors_settings()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=ALLOW_ORIGINS,
+    allow_origin_regex=ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
